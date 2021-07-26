@@ -1,0 +1,55 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    getambassador.io/config: |
+      ---
+      apiVersion: ambassador/v1
+      kind:  Mapping
+      name:  formdemo_uidev_mapping
+      prefix: /formdemo
+      rewrite: ""
+      service: https://formdemo-ui-dev-svc:8080
+      tls: istio-upstream
+      bypass_auth: true
+      add_response_headers:
+        Strict-Transport-Security: max-age=63072000; includeSubDomains
+        Content-Security-Policy: default-src 'self' *.cxm-salescloud.com *.webapi.amap.com *.maps.googleapis.com *.hana.ondemand.com; style-src 'self' 'unsafe-inline' *.cxm-salescloud.com *.webapi.amap.com *.maps.googleapis.com *.hana.ondemand.com; img-src 'self' *.cxm-salescloud.com *.webapi.amap.com *.maps.googleapis.com *.hana.ondemand.com
+      cors:
+        origins: "*"
+        methods: POST, GET, OPTIONS, PUT, DELETE
+        headers: Content-Type, x-sap-crm-token, x-csrf-token, location
+        exposed_headers: location
+        max_age: "86400"
+  name: formdemo-ui-dev-svc
+spec:
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: formdemo-ui-dev
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: formdemo-ui-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: formdemo-ui-dev
+  template:
+    metadata:
+      labels:
+        app: formdemo-ui-dev
+    spec:
+      containers:
+        - image: cxm-dev.docker.repositories.sap.ondemand.com/cxm/formdemo-ui-dev:latest
+          name: formdemo-ui-dev
+          ports:
+            - containerPort: 8080
+      imagePullSecrets:
+        - name: cxm-dev
+
